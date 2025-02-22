@@ -222,6 +222,15 @@
     event.preventDefault();
     event.returnValue = ""; // Some browsers require this for the warning to show
 });
+window.open = function () {
+    console.log("Blocked attempt to open a new page.");
+    return null;
+};
+document.addEventListener("click", function (event) {
+    if (event.target.tagName === "A") {
+        event.preventDefault();
+    }
+});
     </script>
 </body>
 </html>
