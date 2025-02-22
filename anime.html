@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Anime Details</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css">
+    <style>
+        /* Custom styles for line clamping and smooth transitions */
+        .line-clamp-3 {
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        .smooth-transition {
+            transition: all 0.3s ease-in-out;
+        }
+    </style>
+</head>
+<body class="bg-black text-white min-h-screen">
+    <!-- Navigation Bar -->
+    <nav class="fixed top-0 w-full bg-gradient-to-b from-black via-black to-transparent z-50">
+        <div class="container mx-auto px-4 py-4 flex items-center justify-between">
+            <a href="index.html" class="text-2xl md:text-3xl font-bold text-red-600 hover:text-red-700 smooth-transition">AnimeHub</a>
+            <div class="flex items-center space-x-4">
+                <button class="text-white hover:text-gray-300 smooth-transition">Browse</button>
+                <button class="text-white hover:text-gray-300 smooth-transition">Search</button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Loading State -->
+    <div id="loading" class="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50">
+        <div class="animate-spin rounded-full h-16 w-16 border-4 border-red-600 border-t-transparent"></div>
+    </div>
+
+    <!-- Hero Section -->
+    <div id="hero" class="relative w-full h-[70vh] py-14 overflow-hidden mt-16">
+        <div id="hero-image" class="absolute inset-0 bg-center bg-cover  scale-105"></div>
+        <div class="absolute inset-0 bg-gradient-to-t from-black via-black/80 to-transparent"></div>
+        <div class="absolute inset-0 bg-gradient-to-r from-black via-black/50 to-transparent"></div>
+        
+        <div class="relative h-full container mx-auto px-4 md:px-8 flex items-end pb-16">
+            <div class="max-w-3xl space-y-4">
+                <h1 id="anime-title" class="text-4xl md:text-6xl font-bold"></h1>
+                <div class="flex items-center space-x-4 text-sm">
+                    <span id="anime-rating" class="text-green-400 font-semibold"></span>
+                    <span id="anime-genres" class="text-gray-300"></span>
+                </div>
+                <p id="anime-description" class="text-gray-300 text-lg line-clamp-3 md:line-clamp-none"></p>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- Episodes Section -->
+    <div class="container mx-auto px-4 md:px-8 py-8">
+        <div class="flex items-center justify-between mb-6">
+            <h2 class="text-2xl font-bold">Episodes</h2>
+            <div class="flex items-center space-x-4">
+                <select id="season-select" class="bg-gray-800 text-white px-4 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-red-600 smooth-transition">
+                    <option value="all">All Seasons</option>
+                </select>
+            </div>
+        </div>
+        
+        <div id="episodes" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"></div>
+    </div>
+
+    <script>
+    document.addEventListener("DOMContentLoaded", () => {
+        const params = new URLSearchParams(window.location.search);
+        const url = params.get("link");
+        const loadingEl = document.getElementById("loading");
+        
+        if (url) {
+            fetch(`https://aniscrap.vercel.app/anime/detailss?url=${encodeURIComponent(url)}`)
+                .then(res => res.json())
+                .then(data => {
+                    // Hide loading state
+                    loadingEl.classList.add('hidden');
+
+                    // Update hero section
+                    document.getElementById("anime-title").textContent = data.title;
+                    document.getElementById("hero-image").style.backgroundImage = `url(${data.thumbnail})`;
+                    document.getElementById("anime-description").textContent = data.description;
+                    document.getElementById("anime-rating").textContent = `★ ${data.rating}`;
+                    document.getElementById("anime-genres").textContent = data.genres.join(" • ");
+
+                    // Update page title
+                    document.title = `${data.title} - AnimeHub`;
+
+                    // Populate episodes
+                    const episodesDiv = document.getElementById("episodes");
+                    data.episodes.forEach(ep => {
+                        const episodeDiv = document.createElement("div");
+                        episodeDiv.className = "group cursor-pointer smooth-transition";
+                        episodeDiv.innerHTML = `
+                            <div class="relative aspect-video overflow-hidden rounded-md">
+                                <img 
+                                    src="${ep.thumbnail}" 
+                                    alt="${ep.title}" 
+                                    class="w-full h-full object-cover transform transition-transform duration-300 group-hover:scale-105"
+                                    onerror="this.src='/api/placeholder/640/360'"
+                                />
+                                <div class="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-0 group-hover:opacity-100 smooth-transition">
+                                    <div class="absolute bottom-0 left-0 right-0 p-4">
+                                        <div class="flex items-center justify-center">
+                                            <button class="bg-white text-black rounded-full p-2 transform transition-transform duration-300 hover:scale-110">
+                                                <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                                                    <path d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" />
+                                                </svg>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mt-2">
+                                <h3 class="font-medium text-gray-300 group-hover:text-white smooth-transition">${ep.title}</h3>
+                            </div>
+                        `;
+                        
+                        episodeDiv.onclick = () => {
+                            window.location.href = `episode.html?link=${encodeURIComponent(ep.link)}`;
+                        };
+                        
+                        episodesDiv.appendChild(episodeDiv);
+                    });
+
+                    // Set up play button for first episode
+                    if (data.episodes.length > 0) {
+                        const playButton = document.querySelector('button');
+                        playButton.onclick = () => {
+                            window.location.href = `episode.html?link=${encodeURIComponent(data.episodes[0].link)}`;
+                        };
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    loadingEl.innerHTML = `
+                        <div class="text-center">
+                            <p class="text-red-500 text-xl">Failed to load anime details.</p>
+                            <button onclick="window.location.reload()" class="mt-4 bg-red-600 text-white px-6 py-2 rounded-md hover:bg-red-700 smooth-transition">
+                                Try Again
+                            </button>
+                        </div>
+                    `;
+                });
+        }
+    });
+    </script>
+</body>
+</html>
